@@ -58,6 +58,7 @@ class Transport(object):
 
 
 class _Epoll(object):
+
     def __init__(self):
         self.epoller = select.epoll(flags=select.EPOLL_CLOEXEC)
 
@@ -69,6 +70,7 @@ class _Epoll(object):
 
     def close(self):
         self.epoller.close()
+
 
 class _Kqueue(object):
 
@@ -94,7 +96,7 @@ class _Kqueue(object):
             timeout = None  # kqueue behaviour
         events = self._kqueue.control(None, self.MAX_EVENTS, timeout)
         results = defaultdict(lambda: 0x01)
-        for e in events:        
+        for e in events:
             fd = e.ident
             if e.filter == select.KQ_FILTER_READ:
                 results[fd] |= IOLoop._READ
@@ -104,6 +106,7 @@ class _Kqueue(object):
 
     def close(self):
         self._kqueue.close()
+
 
 class IOLoop(object):
 

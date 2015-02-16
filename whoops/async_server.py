@@ -1,4 +1,3 @@
-import select
 import socket
 
 

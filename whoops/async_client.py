@@ -1,4 +1,3 @@
-import select
 import socket
 
 from .ioloop import IOLoop, Transport
