@@ -5,9 +5,10 @@ class EchoClient(async_client.AsyncClient):
 
     def on_write(self, conn):
         conn.write(b"hello")
+        conn.close()
 
     def on_connection(self, conn):
-        print(conn.read().decode('utf-8'))
+        print(conn.read())
 
 if __name__ == "__main__":
     ioloop = ioloop.IOLoop.instance(num_backends=1000)

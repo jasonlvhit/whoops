@@ -5,7 +5,7 @@ class EchoServer(async_server.AsyncServer):
 
     def on_connection(self, conn):
         data = conn.read()
-        print(data.decode('utf-8'))
+        print(data)
         conn.write(data)
 
 if __name__ == "__main__":
