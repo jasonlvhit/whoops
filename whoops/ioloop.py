@@ -161,7 +161,7 @@ class IOLoop(object):
 
     def __init__(self, num_backends=-1):
 
-        # single thread epoll object
+        # single thread object
         self._impl = None
         if hasattr(select, 'epoll'):
             self._impl = _Epoll()
@@ -193,7 +193,7 @@ class IOLoop(object):
             if not revents:
                 self.logger.info("Nothing happened...")
             else:
-            # process
+                # process
                 self._process_events(revents)
 
     def _process_events(self, revents):
@@ -204,8 +204,8 @@ class IOLoop(object):
             connection = None
             try:
                 connection = self.connections[fd]
-            except KeyError as e:
-                # pass?
+            except KeyError:
+                # Normally this will never happen.
                 pass
             if events & self._READ:
                 # silence mode for threadpool executor

@@ -13,11 +13,6 @@ def main():
         user_input = input("Input:")
         data = user_input.encode('utf-8')
 
-        """connect_socket = socket.create_connection(
-            address=remote, timeout=30)
-        
-        connect_socket.setblocking(False)
-"""
         connect_socket.send(data)
 
         t = connect_socket.recv(1024)
