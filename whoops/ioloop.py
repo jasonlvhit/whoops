@@ -35,17 +35,17 @@ class Transport(object):
         self.on_connection_cb = None
         self.on_close_cb = None
 
-    def read(self, bytes=1024, buffer=''):
+    def read(self, bytes=1024, buffer=b''):
         try:
             while True:
-                buffer += self.conn.recv(bytes).decode('utf-8')
+                buffer += self.conn.recv(bytes)
         except socket.error:
             pass
         return buffer
 
-    def write(self, str):
+    def write(self, data):
         try:
-            self.conn.send(str.encode())
+            self.conn.send(data)
         except socket.error:
             pass
 
@@ -95,13 +95,16 @@ class _Kqueue(object):
         if timeout < 0:
             timeout = None  # kqueue behaviour
         events = self._kqueue.control(None, self.MAX_EVENTS, timeout)
-        results = defaultdict(lambda: 0x01)
+        results = defaultdict(lambda: IOLoop._NONE)
         for e in events:
             fd = e.ident
             if e.filter == select.KQ_FILTER_READ:
                 results[fd] |= IOLoop._READ
             elif e.filter == select.KQ_FILTER_WRITE:
-                results[fd] |= IOLoop._WRITE
+                if e.flags & select.KQ_EV_EOF:
+                    results[fd] |= IOLoop._ERROR
+                else:
+                    results[fd] |= IOLoop._WRITE
         return results.items()
 
     def close(self):
@@ -124,7 +127,7 @@ class IOLoop(object):
     _EPOLLET = (1 << 31)
 
     # Our events map exactly to the epoll events
-    # NONE = 0
+    _NONE = 0
     _READ = _EPOLLIN
     _WRITE = _EPOLLOUT
     _ERROR = _EPOLLERR | _EPOLLHUP
@@ -158,7 +161,7 @@ class IOLoop(object):
 
     def __init__(self, num_backends=-1):
 
-        # single thread epoll object
+        # single thread object
         self._impl = None
         if hasattr(select, 'epoll'):
             self._impl = _Epoll()
@@ -190,7 +193,7 @@ class IOLoop(object):
             if not revents:
                 self.logger.info("Nothing happened...")
             else:
-            # process
+                # process
                 self._process_events(revents)
 
     def _process_events(self, revents):
@@ -201,8 +204,8 @@ class IOLoop(object):
             connection = None
             try:
                 connection = self.connections[fd]
-            except KeyError as e:
-                # pass?
+            except KeyError:
+                # Normally this will never happen.
                 pass
             if events & self._READ:
                 # silence mode for threadpool executor
@@ -237,7 +240,7 @@ class IOLoop(object):
         self.connections[acceptor.fileno()] = acceptor.transport()
         # register
         self._impl.register(
-            self.acceptor.fileno(), eventmask=IOLoop._EPOLLIN | IOLoop._EPOLLET)
+            self.acceptor.fileno(), eventmask=IOLoop._READ | IOLoop._EPOLLET)
 
     def register_connector(self, connector):
         self.connections[connector.fileno()] = connector.transport
