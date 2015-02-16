@@ -1,4 +1,3 @@
-import select
 import socket
 
 from .ioloop import IOLoop, Transport
@@ -25,7 +24,7 @@ class Connector(object):
         # transport
         self.transport = Transport(self.connect_socket, self.remote)
         self.transport.events = (
-            select.EPOLLIN | select.EPOLLOUT | select.EPOLLERR | select.EPOLLET)
+            IOLoop._EPOLLIN | IOLoop._EPOLLOUT | IOLoop._EPOLLERR | IOLoop._EPOLLET)
 
     def connect(self):
         self.connect_socket.connect(self.remote)

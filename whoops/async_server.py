@@ -1,4 +1,3 @@
-import select
 import socket
 
 
@@ -29,11 +28,11 @@ class Acceptor(object):
             while True:
                 conn, address = self.accept()
                 conn.setblocking(False)
-                self.ioloop.epoller.register(
+                self.ioloop.register(
                     conn.fileno(),
-                    select.EPOLLIN | select.EPOLLERR | select.EPOLLET)
+                    IOLoop._EPOLLIN | IOLoop._EPOLLERR | IOLoop._EPOLLET)
                 transport = Transport(conn, address)
-                transport.events = select.EPOLLIN
+                transport.events = IOLoop._EPOLLIN
                 transport.on_connection_cb = self.ioloop.on_connection_cb
                 transport.on_write_cb = self.ioloop.on_write_cb
                 transport.on_close_cb = self.ioloop.on_close_cb
@@ -42,7 +41,7 @@ class Acceptor(object):
                 # connection_made callback
                 self.ioloop.executor.submit(
                     transport.connection_made_cb)
-        except socket.error as e:
+        except socket.error:
             pass
 
     def fileno(self):
