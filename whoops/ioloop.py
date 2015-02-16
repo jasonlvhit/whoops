@@ -3,6 +3,7 @@ import select
 import threading
 
 from concurrent.futures import ThreadPoolExecutor
+from collections import defaultdict
 
 from .logger import Logger
 
@@ -38,14 +39,14 @@ class Transport(object):
         try:
             while True:
                 buffer += self.conn.recv(bytes).decode('utf-8')
-        except socket.error as e:
+        except socket.error:
             pass
         return buffer
 
     def write(self, str):
         try:
             self.conn.send(str.encode())
-        except socket.error as e:
+        except socket.error:
             pass
 
     def close(self):
@@ -55,6 +56,54 @@ class Transport(object):
         # close connection
         self.conn.close()
 
+
+class _Epoll(object):
+    def __init__(self):
+        self.epoller = select.epoll(flags=select.EPOLL_CLOEXEC)
+
+    def register(self, fd, eventmask):
+        self.epoller.register(fd, eventmask)
+
+    def poll(self, timeout):
+        return self.epoller.poll(timeout)
+
+    def close(self):
+        self.epoller.close()
+
+class _Kqueue(object):
+
+    MAX_EVENTS = 1024
+
+    def __init__(self):
+        self._kqueue = select.kqueue()
+
+    def _control(self, fd, mode, flags):
+        events = []
+        if mode & IOLoop._READ:
+            events.append(select.kevent(fd, select.KQ_FILTER_READ, flags))
+        if mode & IOLoop._WRITE:
+            events.append(select.kevent(fd, select.KQ_FILTER_WRITE, flags))
+        for e in events:
+            self._kqueue.control([e], 0)
+
+    def register(self, fd, eventmask):
+        self._control(fd, eventmask, select.KQ_EV_ADD)
+
+    def poll(self, timeout):
+        if timeout < 0:
+            timeout = None  # kqueue behaviour
+        events = self._kqueue.control(None, self.MAX_EVENTS, timeout)
+        results = defaultdict(lambda: 0x01)
+        for e in events:        
+            fd = e.ident
+            if e.filter == select.KQ_FILTER_READ:
+                results[fd] |= IOLoop._READ
+            elif e.filter == select.KQ_FILTER_WRITE:
+                results[fd] |= IOLoop._WRITE
+        return results.items()
+
+    def close(self):
+        self._kqueue.close()
 
 class IOLoop(object):
 
@@ -107,7 +156,11 @@ class IOLoop(object):
     def __init__(self, num_backends=-1):
 
         # single thread epoll object
-        self.epoller = select.epoll(flags=select.EPOLL_CLOEXEC)
+        self._impl = None
+        if hasattr(select, 'epoll'):
+            self._impl = _Epoll()
+        elif hasattr(select, 'kqueue'):
+            self._impl = _Kqueue()
 
         # acceptor
         self.acceptor = None
@@ -130,7 +183,7 @@ class IOLoop(object):
     def start(self, timeout=1):
         while True:
             # epoll wait
-            revents = self.epoller.poll(timeout)
+            revents = self._impl.poll(timeout)
             if not revents:
                 self.logger.info("Nothing happened...")
             else:
@@ -172,17 +225,20 @@ class IOLoop(object):
     def bind(self, address):
         self.acceptor.bind(address)
 
+    def register(self, fd, eventmask):
+        self._impl.register(fd, eventmask)
+
     def register_acceptor(self, acceptor):
         self.acceptor = acceptor
         self.acceptor.ioloop = self
         self.connections[acceptor.fileno()] = acceptor.transport()
         # register
-        self.epoller.register(
-            self.acceptor.fileno(), eventmask=select.EPOLLIN | select.EPOLLET)
+        self._impl.register(
+            self.acceptor.fileno(), eventmask=IOLoop._EPOLLIN | IOLoop._EPOLLET)
 
     def register_connector(self, connector):
         self.connections[connector.fileno()] = connector.transport
-        self.epoller.register(
+        self._impl.register(
             connector.fileno(), eventmask=connector.transport.events)
         connector.ioloop = self
 
@@ -190,7 +246,7 @@ class IOLoop(object):
         return self._EVENTS_DICT[events]
 
     def stop(self):
-        self.epoller.close()
+        self._impl.close()
         if self.acceptor:
             self.acceptor.close()
         for conn in self.connections:
