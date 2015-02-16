@@ -35,10 +35,10 @@ class Transport(object):
         self.on_connection_cb = None
         self.on_close_cb = None
 
-    def read(self, bytes=1024, buffer=''):
+    def read(self, bytes=1024, buffer=b''):
         try:
             while True:
-                buffer += self.conn.recv(bytes).decode('utf-8')
+                buffer += self.conn.recv(bytes)
         except socket.error:
             pass
         return buffer

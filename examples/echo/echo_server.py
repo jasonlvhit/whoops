@@ -1,10 +1,11 @@
 from whoops import ioloop, async_server
 
+
 class EchoServer(async_server.AsyncServer):
 
     def on_connection(self, conn):
         data = conn.read()
-        print(data)
+        print(data.decode('utf-8'))
         conn.write(data)
 
 if __name__ == "__main__":
