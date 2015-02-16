@@ -30,9 +30,9 @@ class Acceptor(object):
                 conn.setblocking(False)
                 self.ioloop.register(
                     conn.fileno(),
-                    IOLoop._EPOLLIN | IOLoop._EPOLLERR | IOLoop._EPOLLET)
+                    IOLoop._READ | IOLoop._EPOLLET)
                 transport = Transport(conn, address)
-                transport.events = IOLoop._EPOLLIN
+                transport.events = IOLoop._READ
                 transport.on_connection_cb = self.ioloop.on_connection_cb
                 transport.on_write_cb = self.ioloop.on_write_cb
                 transport.on_close_cb = self.ioloop.on_close_cb
@@ -94,25 +94,3 @@ class AsyncServer(object):
 
     def on_close(self):
         raise NotImplementedError()
-
-
-class EchoServer(AsyncServer):
-
-    """ Echo server example
-
-    """
-
-    def on_connection(self, conn):
-        self.data = conn.read()
-        print(self.data)
-        conn.write("Hello from server.")
-        # conn.close()
-        # del self.ioloop.connections[conn.fileno()]
-
-if __name__ == '__main__':
-    # init server with a event loop instance,
-    # you should set the backend executor number,
-    # to start the background-thread of job(callbacks) workers.
-    server = EchoServer(
-        IOLoop.instance(num_backends=1000), ('127.0.0.1', 8888))
-    server.listen()
