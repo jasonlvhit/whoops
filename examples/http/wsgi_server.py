@@ -61,7 +61,7 @@ class WSGIServer(HttpServer):
 
     def start_response(self, status, headers, exc_info=None):
         code = int(status[0:3])
-        self.send_response(code)
+        self.send_response(code, status[4:])
         self.need_content_length = True
         for name, val in headers:
             if name == 'Content-Length':
