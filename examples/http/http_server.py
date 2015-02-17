@@ -7,8 +7,9 @@ from whoops import ioloop, async_server
 class HttpServer(async_server.AsyncServer):
 
     def __init__(self, ioloop, address):
-        super(HttpServer, self).__init__(ioloop, address)
 
+        super(HttpServer, self).__init__(ioloop, address)
+        self.host, self.port = address
         self.rbufsize = -1
         self.wbufsize = 0
         self.rfile = None
@@ -18,7 +19,6 @@ class HttpServer(async_server.AsyncServer):
         self.headers = None
         self._headers_buffer = []
 
-        
     def on_connection(self, conn):
         self.connection = conn
         self.parse_request()
@@ -28,7 +28,9 @@ class HttpServer(async_server.AsyncServer):
         data = self.connection.read()
         self.rfile = BytesIO(data)
         self.raw_requestline = self.rfile.readline(65537)
+        # print(self.raw_requestline)
         self.header = parse_headers(self.rfile)
+        # print(self.header)
 
     def do_response(self):
         body = "<html><body><h2>Hello Whoops</h2></body></html>"
@@ -62,6 +64,9 @@ class HttpServer(async_server.AsyncServer):
         if body:
             msg += body
         self.connection.write(msg)
+
+    def close(self):
+        self.connection.close()
 
 if __name__ == "__main__":
     HttpServer(ioloop.IOLoop.instance(num_backends=1000),
