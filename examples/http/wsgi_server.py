@@ -12,6 +12,7 @@ class WSGIServer(HttpServer):
         self.environ = None
         self.result = None
         self.cgi_environ = None
+        self.http_version = "HTTP/1.1"
         self.wsgi_version = (1, 0)
         self.wsgi_multithread = True
         self.wsgi_multiprocess = False
@@ -41,7 +42,7 @@ class WSGIServer(HttpServer):
         env['PATH_INFO'] = path
         env['CONTENT_TYPE'] = self.header.get('content-type')
         env['CONTENT_LENGTH'] = self.header.get('content-length')
-        env['SERVER_PROTOCOL'] = "HTTP/1.1"
+        env['SERVER_PROTOCOL'] = self.http_version
         env['HTTP_HOST'] = self.host
         env['HTTP_PORT'] = self.port
 

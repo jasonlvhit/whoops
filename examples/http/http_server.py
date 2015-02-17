@@ -102,13 +102,11 @@ class HttpServer(async_server.AsyncServer):
         data = self.connection.read()
         self.rfile = BytesIO(data)
         self.raw_requestline = self.rfile.readline(65537)
-        # print(self.raw_requestline)
         self.header = parse_headers(self.rfile)
-        # print(self.header)
 
     def do_response(self):
         body = "<html><body><h2>Hello Whoops</h2></body></html>"
-        self.send_response(200, message='OK')
+        self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.send_header("Content-Length", len(body))
         self.end_headers()
