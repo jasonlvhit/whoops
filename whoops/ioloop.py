@@ -89,7 +89,7 @@ class _Kqueue(object):
             self._kqueue.control([e], 0)
 
     def register(self, fd, eventmask):
-        self._control(fd, eventmask, select.KQ_EV_ADD)
+        self._control(fd, eventmask, select.KQ_EV_ADD | select.KQ_EV_CLEAR)
 
     def poll(self, timeout):
         if timeout < 0:
