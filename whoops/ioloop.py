@@ -44,6 +44,8 @@ class Transport(object):
         return buffer
 
     def write(self, data):
+        if isinstance(data, str):
+            data = data.encode('utf-8')
         try:
             self.conn.send(data)
         except socket.error:
