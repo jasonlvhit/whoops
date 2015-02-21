@@ -49,10 +49,11 @@
 # <-- {"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid Request"}, "id": null}
 
 import json
+import uuid
+import socket
 
-from . import ioloop
-from . import async_server
-from . import async_client
+from whoops import async_server
+from whoops import async_client
 
 JSONRPC_CODES = {
     -32600: "Invalid Request.",
@@ -69,9 +70,11 @@ class JSONRPCServer(async_server.AsyncServer):
         "code": -1,
         "message": "null"
     }
-
+    
+    method_dict = {}
+    
     def on_connection(self, conn):
-        data = conn.read()
+        data = conn.read().decode('utf-8')
         print(data)
         jsonobj = None
         result = {
@@ -169,20 +172,51 @@ class JSONRPCServer(async_server.AsyncServer):
     def process_method(self, method, params):
         try:
             if not params:
-                return getattr(self, method)()
+                return self.method_dict[method](self)
             if isinstance(params, list):
-                return getattr(self, method)(*params)
+                return self.method_dict[method](self, *params)
             if isinstance(params, dict):
-                return getattr(self, method)(**params)
+                return self.method_dict[method](self, **params)
         except Exception as e:
             return e
 
-    def subtract(self, a, b):
-        return a - b
+    @classmethod
+    def jsonrpc_method(self, f):
+        self.method_dict[f.__name__] = f
+        def wrapper(self, *args, **kwds):
+            return f(self, *args, **kwds)
+        return wrapper
+        
 
-    def foobar(self):
-        pass
-
-
-class JSONRPCClient(async_client.AsyncClient):
-    pass
+class JSONRPCClient(object):
+    
+    version = "2.0"
+    
+    def __init__(self, endpoint):
+        self.endpoint = endpoint
+        self.connect_socket = socket.socket(socket.AF_INET)
+        self.connect_socket.setsockopt(
+                socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.connect_socket.connect(endpoint)
+        
+    def __getattr__(self, name):
+        return self.make_callable(name)
+        
+    def make_callable(self, method_name):
+        def send_payload(params):
+            self.connect_socket.send(json.dumps({
+                "jsonrpc": self.version,
+                "method": method_name,
+                "params": params,
+                "id": str(uuid.uuid1())
+            }).encode('utf-8'))
+            t = self.connect_socket.recv(1024)
+            return t.decode('utf-8')
+            
+        def func(*args, **kwargs):
+            params = kwargs if len(kwargs) else args
+            r = send_payload(params)
+            return json.loads(r)
+            
+        return func
+        
