@@ -1,8 +1,16 @@
 Whoops.
-==================
+=======
 
 Whoops, lightweight, asynchronous, event-driven network programming snippets(maybe framework) in Python.
 
+Requirements
+------------
+
+- Python 3.0 +
+- Linux 2.5 + with epoll, or BSD/Mac OS X with kqueue
+
+Usage
+-----
 Here is a simple echo server and echo client example. ::
 
 
@@ -39,7 +47,7 @@ async echo client::
         client.connect()  
 
 
-install requires: Python version 3.0 + ; Linux 2.5 + which support epoll.
+See `examples <https://github.com/jasonlvhit/whoops/tree/master/examples>`__ for more examples.
 
 
 License
