@@ -220,9 +220,9 @@ class IOLoop(object):
                 # ioloop will will not do or notify anything.
                 #
                 #
-                connection.on_connection_cb(connection)
-                # self.executor.submit(
-                #    connection.on_connection_cb, connection)
+                # connection.on_connection_cb(connection)
+                self.executor.submit(
+                    connection.on_connection_cb, connection)
             if events & self._WRITE:
                 self.executor.submit(
                     connection.on_write_cb, connection)
@@ -257,7 +257,7 @@ class IOLoop(object):
         try:
             return self._EVENTS_DICT[events]
         except KeyError:
-            return "Unknown"
+            return "Unknown(%d)" % events
 
     def stop(self):
         self._impl.close()
