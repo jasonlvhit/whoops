@@ -101,7 +101,10 @@ class _Kqueue(object):
         for e in events:
             fd = e.ident
             if e.filter == select.KQ_FILTER_READ:
-                results[fd] |= IOLoop._READ
+                if e.flags & select.KQ_EV_EOF:
+                    results[fd] |= IOLoop._ERROR
+                else:
+                    results[fd] |= IOLoop._READ
             elif e.filter == select.KQ_FILTER_WRITE:
                 if e.flags & select.KQ_EV_EOF:
                     results[fd] |= IOLoop._ERROR
@@ -217,9 +220,9 @@ class IOLoop(object):
                 # ioloop will will not do or notify anything.
                 #
                 #
-                # connection.on_connection_cb(connection)
-                self.executor.submit(
-                    connection.on_connection_cb, connection)
+                connection.on_connection_cb(connection)
+                # self.executor.submit(
+                #    connection.on_connection_cb, connection)
             if events & self._WRITE:
                 self.executor.submit(
                     connection.on_write_cb, connection)
@@ -251,7 +254,10 @@ class IOLoop(object):
         connector.ioloop = self
 
     def events_to_string(self, events):
-        return self._EVENTS_DICT[events]
+        try:
+            return self._EVENTS_DICT[events]
+        except KeyError:
+            return "Unknown"
 
     def stop(self):
         self._impl.close()
