@@ -25,6 +25,7 @@ class BaseLogger(object):
 
 
 class DefaultLogger(BaseLogger):
+
     def __init__(self):
         super(DefaultLogger, self).__init__()
         self.FORMAT = '[%(levelname)s] %(asctime)-15s %(message)s'

@@ -225,7 +225,7 @@ class IOLoop(object):
                 #
                 # connection.on_connection_cb(connection)
                 self.executor.submit(
-                   connection.on_connection_cb, connection)
+                    connection.on_connection_cb, connection)
             if events & self._WRITE:
                 self.executor.submit(
                     connection.on_write_cb, connection)
