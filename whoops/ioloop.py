@@ -5,7 +5,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
 
-from .logger import Logger
+from .logger import DefaultLogger
 
 
 class Transport(object):
@@ -189,21 +189,21 @@ class IOLoop(object):
         self.on_close_cb = None
 
         # logger
-        self.logger = Logger()
+        self.logger = DefaultLogger()
 
     def start(self, timeout=1):
         while True:
             # epoll wait
             revents = self._impl.poll(timeout)
             if not revents:
-                self.logger.info("Nothing happened...")
+                self.logger.debug("Nothing happened...")
             else:
                 # process
                 self._process_events(revents)
 
     def _process_events(self, revents):
         for fd, events in revents:
-            self.logger.info(
+            self.logger.debug(
                 "fd: %d, events: %s", fd, self.events_to_string(events))
             # active connection.
             connection = None
@@ -222,7 +222,7 @@ class IOLoop(object):
                 #
                 # connection.on_connection_cb(connection)
                 self.executor.submit(
-                    connection.on_connection_cb, connection)
+                   connection.on_connection_cb, connection)
             if events & self._WRITE:
                 self.executor.submit(
                     connection.on_write_cb, connection)

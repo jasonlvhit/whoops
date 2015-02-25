@@ -61,8 +61,12 @@ class WSGIServer(HttpServer):
         env['wsgi.wsgi_multiprocess'] = self.wsgi_multiprocess
 
     def start_response(self, status, headers, exc_info=None):
+
         code = int(status[0:3])
-        self.send_response(code, status[4:])
+        message = str(status[4:])
+        self.send_response(code, message)
+        self.ioloop.logger.info(
+            self.cgi_environ['PATH_INFO'] + "  %s %d %s\r\n" % ('HTTP/1.1', code, message))
         self.need_content_length = True
         for name, val in headers:
             if name == 'Content-Length':

@@ -1,7 +1,24 @@
+import logging
+
 from http.client import parse_headers
 from io import BytesIO
 
-from whoops import ioloop, async_server
+from whoops import ioloop, async_server, logger
+
+
+class HTTPLogger(logger.BaseLogger):
+
+    def __init__(self, address):
+        super(HTTPLogger, self).__init__()
+        self.logger = logging.getLogger('whoops http server')
+        self.logger.setLevel(logging.INFO)
+        self.extra.setdefault('address', address)
+        self.FORMAT = '%(address)s %(asctime)-15s %(message)s'
+        ch = logging.StreamHandler()
+        formatter = logging.Formatter(self.FORMAT)
+        ch.setFormatter(formatter)
+        self.logger.addHandler(ch)
+
 
 responses = {
     100: ('Continue', 'Request received, please continue'),
@@ -93,6 +110,8 @@ class HttpServer(async_server.AsyncServer):
         self.headers = None
         self._headers_buffer = []
 
+        self.ioloop.logger = HTTPLogger(self.host)
+
     def on_connection(self, conn):
         self.connection = conn
         self.parse_request()
@@ -113,6 +132,7 @@ class HttpServer(async_server.AsyncServer):
         self.send_body(body)
 
     def send_response(self, code, message=None):
+        # self.ioloop.logger.info("%s %d %s\r\n" % ('HTTP/1.1', code, message))
         if message is None or message == '':
             message = responses[code][0]
         self._headers_buffer.append(
