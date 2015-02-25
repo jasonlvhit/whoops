@@ -57,7 +57,10 @@ class Transport(object):
     def close(self):
         # on close callback.
         if self.on_close_cb:
-            self.on_close_cb()
+            try:
+                self.on_close_cb()
+            except NotImplementedError:
+                pass
         # close connection
         self.conn.close()
 
@@ -214,7 +217,7 @@ class IOLoop(object):
                 connection = self.connections[fd]
             except KeyError:
                 # Normally this will never happen.
-                pass
+                continue
             if events & self._READ:
                 # silence mode for threadpool executor
                 # if callbacks not available
@@ -234,6 +237,7 @@ class IOLoop(object):
                     "fd: %d, events %s", fd, self.events_to_string(events))
                 self.logger.error(
                     "fd: %d, connection closed.", fd)
+                connection.close()
                 del self.connections[fd]
 
     def bind(self, address):
