@@ -69,7 +69,6 @@ class WSGIServer(HttpServer):
         env['wsgi.wsgi_multiprocess'] = self.wsgi_multiprocess
 
     def start_response(self, status, headers, exc_info=None):
-
         code = int(status[0:3])
         message = str(status[4:])
         self.send_response(code, message)
