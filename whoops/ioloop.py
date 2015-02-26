@@ -38,10 +38,7 @@ class Transport(object):
     def read(self, bytes=1024, buffer=b''):
         try:
             while True:
-                t = self.conn.recv(bytes)
-                if len(t) == 0:
-                    self.close()
-                buffer += t
+                buffer += self.conn.recv(bytes)
         except socket.error:
             pass
         return buffer
