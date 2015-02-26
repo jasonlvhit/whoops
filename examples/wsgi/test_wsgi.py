@@ -1,4 +1,4 @@
-from wsgi_server import make_server
+from whoops.wsgilib.wsgi_server import make_server
 
 HELLO_WORLD = b"Hello World!\n"
 

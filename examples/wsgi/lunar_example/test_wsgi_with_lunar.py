@@ -1,5 +1,5 @@
 from lunar.lunar import Lunar
-from wsgi_server import make_server
+from whoops.wsgilib.wsgi_server import make_server
 
 app = Lunar(__name__)
 

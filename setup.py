@@ -8,7 +8,7 @@ version='0.0.1'
 setup(
     name='whoops',
     version=version,
-    packages=['whoops'],
+    packages=['whoops', 'whoops.wsgilib', 'whoops.httplib'],
     author="jasonlvhit",
     author_email="jasonlvhit@gmail.com",
     description="whoops is a lightweight, asynchronous, event-driven network programming snippets(maybe framework) in Python",

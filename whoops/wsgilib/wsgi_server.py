@@ -2,7 +2,7 @@ import sys
 
 from io import BytesIO
 
-from http_server import HttpServer
+from whoops.httplib.http_server import HttpServer
 from whoops import ioloop
 
 
