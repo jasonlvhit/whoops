@@ -1,5 +1,7 @@
 import sys
 
+from io import BytesIO
+
 from http_server import HttpServer
 from whoops import ioloop
 
@@ -40,11 +42,17 @@ class WSGIServer(HttpServer):
 
         env['REQUEST_METHOD'] = method
         env['PATH_INFO'] = path
-        env['CONTENT_TYPE'] = self.header.get('content-type')
-        env['CONTENT_LENGTH'] = self.header.get('content-length')
         env['SERVER_PROTOCOL'] = self.http_version
-        env['HTTP_HOST'] = self.host
-        env['HTTP_PORT'] = self.port
+        env['SERVER_HOST'] = self.host
+        env['SERVER_PORT'] = self.port
+
+        if "content-type" in self.header:
+            env['CONTENT_TYPE'] = self.header.get('content-type')
+        if "content-length" in self.header:
+            env['CONTENT_LENGTH'] = self.header.get('content-length')
+
+        for key, value in self.header.items():
+            env["HTTP_" + key.replace("-", "_").upper()] = value
 
         self.cgi_environ = env
 
@@ -52,7 +60,7 @@ class WSGIServer(HttpServer):
         self.setup_cgi_environ()
 
         env = self.environ = self.cgi_environ.copy()
-        env['wsgi.input'] = sys.stdin
+        env['wsgi.input'] = BytesIO(self.request_body)
         env['wsgi.errors'] = sys.stdout
         env['wsgi.version'] = self.wsgi_version
         env['wsgi.run_once'] = self.wsgi_run_once
@@ -66,7 +74,7 @@ class WSGIServer(HttpServer):
         message = str(status[4:])
         self.send_response(code, message)
         self.ioloop.logger.info(
-            self.cgi_environ['PATH_INFO'] + "  %s %d %s\r\n" % ('HTTP/1.1', code, message))
+            self.cgi_environ['PATH_INFO'] + "  %s %d %s" % ('HTTP/1.1', code, message))
         self.need_content_length = True
         for name, val in headers:
             if name == 'Content-Length':
