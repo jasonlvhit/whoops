@@ -80,6 +80,9 @@ class WSGIServer(HttpServer):
                 self.need_content_length = False
             self.send_header(name, val)
 
+        if code == 304:
+            self.need_content_length = False
+
     def finish_response(self):
         if self.need_content_length:
             content_length = 0
