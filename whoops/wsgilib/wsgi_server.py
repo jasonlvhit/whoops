@@ -80,6 +80,8 @@ class WSGIServer(HttpServer):
                 self.need_content_length = False
             self.send_header(name, val)
 
+        self.send_header("Date", self.date_string())
+
         if code == 304:
             self.need_content_length = False
 

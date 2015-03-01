@@ -1,4 +1,5 @@
 import logging
+import time
 
 from http.client import parse_headers
 from io import BytesIO
@@ -130,6 +131,7 @@ class HttpServer(async_server.AsyncServer):
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.send_header("Content-Length", len(body))
+        self.send_header("Date", self.date_string())
         self.end_headers()
         self.send_body(body)
 
@@ -152,6 +154,13 @@ class HttpServer(async_server.AsyncServer):
     def flush_headers(self):
         self.send(b''.join(self._headers_buffer))
         self._headers_buffer = []
+
+    def date_string(self, timestamp=None):
+        if timestamp is None:
+            timestamp = time.gmtime()
+        date = time.strftime(
+                "%a, %d %b %Y %H:%M:%S GMT", timestamp)
+        return date
 
     def send_body(self, body):
         self.send(body.encode('latin-1'))
