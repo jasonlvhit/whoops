@@ -5,14 +5,11 @@ from .ioloop import IOLoop, Transport
 
 
 class Acceptor(object):
-
     def __init__(self):
         # single thread accept socket
         self.accept_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.accept_socket.setsockopt(
-            socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.accept_socket.setsockopt(
-            socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        self.accept_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.accept_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.accept_socket.setblocking(False)
 
         # ioloop
@@ -28,9 +25,7 @@ class Acceptor(object):
             while True:
                 conn, address = self.accept()
                 conn.setblocking(False)
-                self.ioloop.register(
-                    conn.fileno(),
-                    IOLoop._READ | IOLoop._EPOLLET)
+                self.ioloop.register(conn.fileno(), IOLoop._READ | IOLoop._EPOLLET)
                 transport = Transport(conn, address)
                 transport.events = IOLoop._READ
                 transport.on_connection_cb = self.ioloop.on_connection_cb
@@ -39,8 +34,7 @@ class Acceptor(object):
                 transport.connection_made_cb = self.ioloop.connection_made_cb
                 self.ioloop.connections[conn.fileno()] = transport
                 # connection_made callback
-                self.ioloop.executor.submit(
-                    transport.connection_made_cb)
+                self.ioloop.executor.submit(transport.connection_made_cb)
         except socket.error:
             pass
 
@@ -62,7 +56,6 @@ class Acceptor(object):
 
 
 class AsyncServer(object):
-
     def __init__(self, ioloop, address):
         self.ioloop = ioloop
 

@@ -35,7 +35,7 @@ class Transport(object):
         self.on_connection_cb = None
         self.on_close_cb = None
 
-    def read(self, bytes=1024, buffer=b''):
+    def read(self, bytes=1024, buffer=b""):
         try:
             while True:
                 buffer += self.conn.recv(bytes)
@@ -45,7 +45,7 @@ class Transport(object):
 
     def write(self, data):
         if isinstance(data, str):
-            data = data.encode('utf-8')
+            data = data.encode("utf-8")
         try:
             self.conn.send(data)
         except socket.error:
@@ -63,7 +63,6 @@ class Transport(object):
 
 
 class _Epoll(object):
-
     def __init__(self):
         self.epoller = select.epoll(flags=select.EPOLL_CLOEXEC)
 
@@ -131,8 +130,8 @@ class IOLoop(object):
     _EPOLLERR = 0x008
     _EPOLLHUP = 0x010
     _EPOLLRDHUP = 0x2000
-    _EPOLLONESHOT = (1 << 30)
-    _EPOLLET = (1 << 31)
+    _EPOLLONESHOT = 1 << 30
+    _EPOLLET = 1 << 31
 
     # Our events map exactly to the epoll events
     _NONE = 0
@@ -153,8 +152,9 @@ class IOLoop(object):
         (_EPOLLHUP | _EPOLLOUT): "EPOLLOUT | EPOLLHUP",
         (_EPOLLIN | _EPOLLOUT): "EPOLLOUT | EPOLLIN",
         (_EPOLLIN | _EPOLLHUP | _EPOLLERR): "EPOLLIN | EPOLLHUP | EPOLLERR",
-        (_EPOLLIN | _EPOLLOUT | _EPOLLERR | _EPOLLHUP):
-        "EPOLLIN | EPOLLHUP | EPOLLERR | EPOLLOUT",
+        (
+            _EPOLLIN | _EPOLLOUT | _EPOLLERR | _EPOLLHUP
+        ): "EPOLLIN | EPOLLHUP | EPOLLERR | EPOLLOUT",
         # ...
     }
 
@@ -171,9 +171,9 @@ class IOLoop(object):
 
         # single thread object
         self._impl = None
-        if hasattr(select, 'epoll'):
+        if hasattr(select, "epoll"):
             self._impl = _Epoll()
-        elif hasattr(select, 'kqueue'):
+        elif hasattr(select, "kqueue"):
             self._impl = _Kqueue()
 
         # acceptor
@@ -206,8 +206,7 @@ class IOLoop(object):
 
     def _process_events(self, revents):
         for fd, events in revents:
-            self.logger.debug(
-                "fd: %d, events: %s", fd, self.events_to_string(events))
+            self.logger.debug("fd: %d, events: %s", fd, self.events_to_string(events))
             # active connection.
             connection = None
             try:
@@ -224,16 +223,14 @@ class IOLoop(object):
                 #
                 #
                 # connection.on_connection_cb(connection)
-                self.executor.submit(
-                    connection.on_connection_cb, connection)
+                self.executor.submit(connection.on_connection_cb, connection)
             if events & self._WRITE:
-                self.executor.submit(
-                    connection.on_write_cb, connection)
+                self.executor.submit(connection.on_write_cb, connection)
             if events & self._ERROR:
                 self.logger.error(
-                    "fd: %d, events %s", fd, self.events_to_string(events))
-                self.logger.error(
-                    "fd: %d, connection closed.", fd)
+                    "fd: %d, events %s", fd, self.events_to_string(events)
+                )
+                self.logger.error("fd: %d, connection closed.", fd)
                 connection.close()
                 del self.connections[fd]
 
@@ -249,12 +246,12 @@ class IOLoop(object):
         self.connections[acceptor.fileno()] = acceptor.transport()
         # register
         self._impl.register(
-            self.acceptor.fileno(), eventmask=IOLoop._READ | IOLoop._EPOLLET)
+            self.acceptor.fileno(), eventmask=IOLoop._READ | IOLoop._EPOLLET
+        )
 
     def register_connector(self, connector):
         self.connections[connector.fileno()] = connector.transport
-        self._impl.register(
-            connector.fileno(), eventmask=connector.transport.events)
+        self._impl.register(connector.fileno(), eventmask=connector.transport.events)
         connector.ioloop = self
 
     def events_to_string(self, events):

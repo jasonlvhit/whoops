@@ -58,7 +58,7 @@ from whoops import async_client
 JSONRPC_CODES = {
     -32600: "Invalid Request.",
     -32601: "JSON-RPC Version Not Supported.",
-    -32603: "Parse error."
+    -32603: "Parse error.",
 }
 
 
@@ -66,15 +66,12 @@ class JSONRPCServer(async_server.AsyncServer):
 
     version = "2.0"
 
-    base_error = {
-        "code": -1,
-        "message": "null"
-    }
-    
+    base_error = {"code": -1, "message": "null"}
+
     method_dict = {}
-    
+
     def on_connection(self, conn):
-        data = conn.read().decode('utf-8')
+        data = conn.read().decode("utf-8")
         print(data)
         jsonobj = None
         result = {
@@ -87,30 +84,30 @@ class JSONRPCServer(async_server.AsyncServer):
         try:
             jsonobj = json.loads(data)
         except ValueError as e:
-            result['error'] = self.process_error(-32600)
+            result["error"] = self.process_error(-32600)
             conn.write(json.dumps(result))
-            conn.write('\n')
+            conn.write("\n")
             return
 
         if isinstance(jsonobj, list):
             for obj in jsonobj:
                 conn.write(json.dumps(self.process_single_request(obj)))
-                conn.write('\n')
+                conn.write("\n")
             return
 
         if isinstance(jsonobj, dict):
             conn.write(json.dumps(self.process_single_request(jsonobj)))
-            conn.write('\n')
+            conn.write("\n")
             return
 
-        result['error'] = self.process_error(-32600)
+        result["error"] = self.process_error(-32600)
         conn.write(json.dumps(result))
-        conn.write('\n')
+        conn.write("\n")
 
     def process_error(self, error_code=-1):
         error = self.base_error
-        error['code'] = error_code
-        error['message'] = JSONRPC_CODES[error_code]
+        error["code"] = error_code
+        error["message"] = JSONRPC_CODES[error_code]
         return error
 
     def process_single_request(self, jsonobj):
@@ -123,50 +120,50 @@ class JSONRPCServer(async_server.AsyncServer):
 
         # request data should be a python dict.
         if not isinstance(jsonobj, dict):
-            result['error'] = self.process_error(-32600)
+            result["error"] = self.process_error(-32600)
             return result
 
         # request id
         try:
-            result['id'] = jsonobj['id']
+            result["id"] = jsonobj["id"]
         except KeyError as e:
-            result['error'] = self.process_error(-32600)
+            result["error"] = self.process_error(-32600)
             return result
 
         # request version: jsonrpc: 2.0
         request_version = None
         try:
-            request_version = jsonobj['jsonrpc']
+            request_version = jsonobj["jsonrpc"]
         except KeyError as e:
-            result['error'] = self.process_error(-32600)
+            result["error"] = self.process_error(-32600)
             return result
-        if request_version != '2.0':
-            result['error'] = self.process_error(-32601)
+        if request_version != "2.0":
+            result["error"] = self.process_error(-32601)
             return result
 
         # method
         method = None
         try:
-            method = jsonobj['method']
+            method = jsonobj["method"]
         except KeyError as e:
-            result['error'] = self.process_error(-32600)
+            result["error"] = self.process_error(-32600)
             return result
 
         # params
         params = None
         try:
-            params = jsonobj['params']
+            params = jsonobj["params"]
         except KeyError as e:
             pass
 
         if params:
             if not (isinstance(params, list) or isinstance(params, dict)):
-                result['message'] = "Parse error."
+                result["message"] = "Parse error."
                 return result
 
         re = self.process_method(method, params)
         if re and not isinstance(re, Exception):
-            result['result'] = re
+            result["result"] = re
         return result
 
     def process_method(self, method, params):
@@ -183,40 +180,44 @@ class JSONRPCServer(async_server.AsyncServer):
     @classmethod
     def jsonrpc_method(self, f):
         self.method_dict[f.__name__] = f
+
         def wrapper(self, *args, **kwds):
             return f(self, *args, **kwds)
+
         return wrapper
-        
+
 
 class JSONRPCClient(object):
-    
+
     version = "2.0"
-    
+
     def __init__(self, endpoint):
         self.endpoint = endpoint
         self.connect_socket = socket.socket(socket.AF_INET)
-        self.connect_socket.setsockopt(
-                socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.connect_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.connect_socket.connect(endpoint)
-        
+
     def __getattr__(self, name):
         return self.make_callable(name)
-        
+
     def make_callable(self, method_name):
         def send_payload(params):
-            self.connect_socket.send(json.dumps({
-                "jsonrpc": self.version,
-                "method": method_name,
-                "params": params,
-                "id": str(uuid.uuid1())
-            }).encode('utf-8'))
+            self.connect_socket.send(
+                json.dumps(
+                    {
+                        "jsonrpc": self.version,
+                        "method": method_name,
+                        "params": params,
+                        "id": str(uuid.uuid1()),
+                    }
+                ).encode("utf-8")
+            )
             t = self.connect_socket.recv(1024)
-            return t.decode('utf-8')
-            
+            return t.decode("utf-8")
+
         def func(*args, **kwargs):
             params = kwargs if len(kwargs) else args
             r = send_payload(params)
             return json.loads(r)
-            
+
         return func
-        

@@ -4,15 +4,11 @@ from .ioloop import IOLoop, Transport
 
 
 class Connector(object):
-
     def __init__(self, remote):
         # connect socket file
-        self.connect_socket = socket.create_connection(
-            address=remote, timeout=30)
-        self.connect_socket.setsockopt(
-            socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.connect_socket.setsockopt(
-            socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        self.connect_socket = socket.create_connection(address=remote, timeout=30)
+        self.connect_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.connect_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.connect_socket.setblocking(False)
 
         # ioloop
@@ -24,7 +20,8 @@ class Connector(object):
         # transport
         self.transport = Transport(self.connect_socket, self.remote)
         self.transport.events = (
-            IOLoop._EPOLLIN | IOLoop._EPOLLOUT | IOLoop._EPOLLERR | IOLoop._EPOLLET)
+            IOLoop._EPOLLIN | IOLoop._EPOLLOUT | IOLoop._EPOLLERR | IOLoop._EPOLLET
+        )
 
     def connect(self):
         self.connect_socket.connect(self.remote)
@@ -37,7 +34,6 @@ class Connector(object):
 
 
 class AsyncClient(object):
-
     def __init__(self, ioloop, remote):
         self.ioloop = ioloop
 
